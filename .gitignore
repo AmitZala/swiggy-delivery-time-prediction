@@ -85,7 +85,6 @@ target/
 # DVC cache and artifacts (use DVC to manage, not Git)
 .dvc/cache
 .dvc/tmp
-dvc.lock
 
 # Large pipeline outputs and model files (managed by DVC)
 data/raw/*.csv
