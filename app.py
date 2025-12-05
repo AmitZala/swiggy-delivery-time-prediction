@@ -10,8 +10,13 @@ from mlflow import MlflowClient
 from mlflow.exceptions import MlflowException
 import logging
 import os
+from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
 from sklearn import set_config
 from scripts.data_clean_utils import perform_data_cleaning
+
+# Load environment variables from .env file
+load_dotenv()
 
 # set the output as pandas
 set_config(transform_output='pandas')
@@ -20,10 +25,14 @@ set_config(transform_output='pandas')
 import dagshub
 import mlflow.client
 
-dagshub.init(repo_owner='AmitZala', repo_name='swiggy-delivery-time-prediction', mlflow=True)
+dagshub.init(
+    repo_owner=os.getenv('DAGSHUB_REPO_OWNER', 'AmitZala'),
+    repo_name=os.getenv('DAGSHUB_REPO_NAME', 'swiggy-delivery-time-prediction'),
+    mlflow=True
+)
 
 # set the mlflow tracking server
-mlflow.set_tracking_uri("https://dagshub.com/AmitZala/swiggy-delivery-time-prediction.mlflow")
+mlflow.set_tracking_uri(os.getenv('MLFLOW_TRACKING_URI', 'https://dagshub.com/AmitZala/swiggy-delivery-time-prediction.mlflow'))
 
 class Data(BaseModel):  
     ID: str
@@ -81,16 +90,17 @@ ordinal_cat_cols = ["traffic","distance_type"]
 client = MlflowClient()
 
 # load the model info to get the model name
-model_name = load_model_information("run_information.json")['model_name']
+run_info_path = os.getenv('RUN_INFO_PATH', 'run_information.json')
+model_name = load_model_information(run_info_path)['model_name']
 
 # Decide whether to attempt loading from MLflow registry. By default we
 # load the local artifact to avoid MLflow registry calls that may fail on
 # hosting providers that don't support the full Model Registry API
 # (for example DagsHub). Set environment variable `USE_MLFLOW_REGISTRY=1`
 # to opt into registry loading.
-use_registry = os.getenv("USE_MLFLOW_REGISTRY", "false").lower() in ("1", "true", "yes")
+use_registry = os.getenv('USE_MLFLOW_REGISTRY', 'false').lower() in ('1', 'true', 'yes')
 
-local_model_path = "models/model.joblib"
+local_model_path = os.getenv('MODEL_PATH', 'models/model.joblib')
 
 if use_registry:
     # stage of the model
@@ -108,7 +118,7 @@ else:
     model = joblib.load(local_model_path)
 
 # load the preprocessor
-preprocessor_path = "models/preprocessor.joblib"
+preprocessor_path = os.getenv('PREPROCESSOR_PATH', 'models/preprocessor.joblib')
 preprocessor = load_transformer(preprocessor_path)
 
 # build the model pipeline
@@ -119,6 +129,16 @@ model_pipe = Pipeline(steps=[
 
 # create the app
 app = FastAPI()
+
+# Allow CORS for local development so Swagger UI can fetch the API.
+# In production, restrict `allow_origins` to trusted hosts.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # create the home endpoint
 @app.get(path="/")
@@ -159,5 +179,7 @@ def do_predictions(data: Data):
    
    
 if __name__ == "__main__":
-    # Bind to localhost so the app is reachable at http://127.0.0.1:8000
-    uvicorn.run(app="app:app", host="127.0.0.1", port=8000)
+    # Bind to configured host/port so the app is reachable at http://{FASTAPI_HOST}:{FASTAPI_PORT}
+    host = os.getenv('FASTAPI_HOST', '127.0.0.1')
+    port = int(os.getenv('FASTAPI_PORT', '8000'))
+    uvicorn.run(app="app:app", host=host, port=port)

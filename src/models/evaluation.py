@@ -7,18 +7,27 @@ from pathlib import Path
 from sklearn.model_selection import cross_val_score
 from sklearn.metrics import mean_absolute_error, r2_score
 import json
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 
 # initialize dagshub
 import dagshub
 import mlflow.client
-dagshub.init(repo_owner='AmitZala', repo_name='swiggy-delivery-time-prediction', mlflow=True)
+dagshub.init(
+    repo_owner=os.getenv('DAGSHUB_REPO_OWNER', 'AmitZala'),
+    repo_name=os.getenv('DAGSHUB_REPO_NAME', 'swiggy-delivery-time-prediction'),
+    mlflow=True
+)
 
 # set the mlflow tracking server
-mlflow.set_tracking_uri("https://dagshub.com/AmitZala/swiggy-delivery-time-prediction.mlflow")
+mlflow.set_tracking_uri(os.getenv('MLFLOW_TRACKING_URI', 'https://dagshub.com/AmitZala/swiggy-delivery-time-prediction.mlflow'))
 
 # set mlflow experment name
-mlflow.set_experiment("DVC Pipeline")
+mlflow.set_experiment(os.getenv('MLFLOW_EXPERIMENT_NAME', 'DVC Pipeline'))
 
 TARGET = "time_taken"
 
