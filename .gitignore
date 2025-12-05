@@ -82,8 +82,21 @@ target/
 # Jupyter NB Checkpoints
 .ipynb_checkpoints/
 
-# exclude data from source control by default
-#/data/
+# DVC cache and artifacts (use DVC to manage, not Git)
+.dvc/cache
+.dvc/tmp
+dvc.lock
+
+# Large pipeline outputs and model files (managed by DVC)
+data/raw/*.csv
+data/cleaned/*.csv
+data/interim/*.csv
+data/processed/*.csv
+models/*.joblib
+run_information.json
+
+# Git LFS pointer files (if using Git LFS)
+*.lfs
 
 # Mac OS-specific storage files
 .DS_Store
