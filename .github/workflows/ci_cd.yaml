@@ -38,6 +38,16 @@ jobs:
         run: |
           dvc config core.autostage true
 
+      - name: Configure DVC Remote
+        env:
+          DAGSHUB_USER_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
+        run: |
+          # Configure DagsHub as the DVC remote for CI
+          dvc remote add -d dagshub "https://dagshub.com/AmitZala/swiggy-delivery-time-prediction.dvc" || true
+          dvc remote modify dagshub --local auth basic
+          dvc remote modify dagshub --local user AmitZala
+          dvc remote modify dagshub --local password $DAGSHUB_USER_TOKEN
+
       - name: Pull DVC Data
         env:
           DAGSHUB_USER_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
