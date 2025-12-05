@@ -151,8 +151,11 @@ if __name__ == "__main__":
         mlflow.log_metrics({f"CV {num}": score for num, score in enumerate(-cv_scores)})
         
         # mlflow dataset input datatype
-        train_data_input = mlflow.data.from_pandas(train_data,targets=TARGET)
-        test_data_input = mlflow.data.from_pandas(test_data,targets=TARGET)
+        # Note: some linters (pylint) report 'no-member' for mlflow.data
+        # helper methods depending on mlflow client version. Disable that
+        # check on these calls.
+        train_data_input = mlflow.data.from_pandas(train_data,targets=TARGET)  # pylint: disable=no-member
+        test_data_input = mlflow.data.from_pandas(test_data,targets=TARGET)    # pylint: disable=no-member
         
         # log input
         mlflow.log_input(dataset=train_data_input,context="training")
